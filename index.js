@@ -1,1 +1,1 @@
-module.exports = require('.compiled');
+module.exports = require('./compiled');
