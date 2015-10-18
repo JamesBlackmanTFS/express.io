@@ -42,7 +42,7 @@
       options = new Object;
     }
     if ((_ref = options.key) == null) {
-      options.key = 'express.sid';
+      options.key = 'connect.sid';
     }
     if ((_ref1 = options.store) == null) {
       options.store = new session.MemoryStore;
@@ -70,10 +70,10 @@
   };
 
   express.application.io = function(options) {
+    this.lazyrouter();
+
     var defaultOptions, layer,
       _this = this;
-
-    this.lazyrouter();
 
     if (options == null) {
       options = new Object;
@@ -82,7 +82,7 @@
       log: false
     };
     _.defaults(options, defaultOptions);
-    this.io = io.listen(this.server, options);
+    this.io = io(this.server, options);
     this.io.router = new Object;
     this.io.middleware = [];
     this.io.route = function(route, next, options) {
@@ -118,8 +118,10 @@
           return next(null, true);
         });
       }
-      cookieParser = cookieParser();
-      return cookieParser(data, null, function(error) {
+
+      var cookieParserMiddleware = cookieParser();
+
+      return cookieParserMiddleware(data, null, function(error) {
         var rawCookie, request, sessionId;
         if (error != null) {
           return next(error);
@@ -128,10 +130,10 @@
         if (rawCookie == null) {
           request = {
             headers: {
-              cookie: data.query.cookie
+              cookie: data.headers.cookie
             }
           };
-          return cookieParser(request, null, function(error) {
+          return cookieParserMiddleware(request, null, function(error) {
             var sessionId;
             data.cookies = request.cookies;
             rawCookie = data.cookies[sessionConfig.key];
@@ -163,13 +165,13 @@
     this.io.use = function(callback) {
       return _this.io.middleware.push(callback);
     };
-    this.io.sockets.on('connection', function(socket) {
+    this.io.on('connection', function(socket) {
       return initRoutes(socket, _this.io);
     });
     this.io.broadcast = function() {
       var args;
       args = Array.prototype.slice.call(arguments, 0);
-      return _this.io.sockets.emit.apply(_this.io.sockets, args);
+      return _this.io.emit.apply(_this.io, args);
     };
     this.io.room = function(room) {
       return new RoomIO(room, _this.io.sockets);
@@ -236,19 +238,19 @@
         }
         request = {
           data: data,
-          session: socket.handshake.session,
-          sessionID: socket.handshake.sessionID,
+          session: socket.conn.request.session,
+          sessionID: socket.conn.request.sessionID,
           sessionStore: sessionConfig.store,
           socket: socket,
           headers: socket.handshake.headers,
           cookies: socket.handshake.cookies,
           handshake: socket.handshake
         };
-        session = socket.handshake.session;
+        session = socket.conn.request.session;
         if (session != null) {
           request.session = new expressSession.Session(request, session);
         }
-        socket.handshake.session = request.session;
+        socket.conn.request.session = request.session;
         request.io = new RequestIO(socket, request, io);
         request.io.respond = respond;
         if ((_ref = (_base = request.io).respond) == null) {
