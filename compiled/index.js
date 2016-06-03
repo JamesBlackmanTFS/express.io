@@ -240,19 +240,19 @@
         }
         request = {
           data: data,
-          session: socket.conn.request.session,
-          sessionID: socket.conn.request.sessionID,
+          session: socket.handshake.session,
+          sessionID: socket.handshake.sessionID,
           sessionStore: sessionConfig.store,
           socket: socket,
           headers: socket.handshake.headers,
           cookies: socket.handshake.cookies,
           handshake: socket.handshake
         };
-        session = socket.conn.request.session;
+        session = socket.handshake.session;
         if (session != null) {
           request.session = new expressSession.Session(request, session);
         }
-        socket.conn.request.session = request.session;
+        socket.handshake.session = request.session;
         request.io = new RequestIO(socket, request, io);
         request.io.respond = respond;
         if ((_ref = (_base = request.io).respond) == null) {
