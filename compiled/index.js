@@ -82,7 +82,7 @@
       log: false
     };
     _.defaults(options, defaultOptions);
-    this.io = io(this.server, options);
+    this.io = io.listen(this.server, options);
     this.io.router = new Object;
     this.io.middleware = [];
     this.io.route = function(route, next, options) {
