@@ -106,39 +106,51 @@
         return _results;
       }
     };
-    this.io.configure(function (socket, next) {
-      var data = socket.request;
-      if (sessionConfig.store == null) {
-        return async.forEachSeries(_this.io.middleware, function(callback, next) {
-          return callback(data, next);
-        }, function(error) {
-          if (error != null) {
-            return next(error);
+    this.io.configure(function () {
+      //var data = socket.request;
+      return _this.io.set('authorization', function(data, next) {
+          if (sessionConfig.store == null) {
+            return async.forEachSeries(_this.io.middleware, function(callback, next) {
+              return callback(data, next);
+            }, function(error) {
+              if (error != null) {
+                return next(error);
+              }
+              return next(null, true);
+            });
           }
-          return next(null, true);
-        });
-      }
 
-      var cookieParserMiddleware = cookieParser();
+          var cookieParserMiddleware = cookieParser();
 
-      return cookieParserMiddleware(data, null, function(error) {
-        var rawCookie, request, sessionId;
-        if (error != null) {
-          return next(error);
-        }
-        rawCookie = data.cookies[sessionConfig.key];
-        if (rawCookie == null) {
-          request = {
-            headers: {
-              cookie: data.headers.cookie
+          return cookieParserMiddleware(data, null, function(error) {
+            var rawCookie, request, sessionId;
+            if (error != null) {
+              return next(error);
             }
-          };
-          return cookieParserMiddleware(request, null, function(error) {
-            var sessionId;
-            data.cookies = request.cookies;
             rawCookie = data.cookies[sessionConfig.key];
             if (rawCookie == null) {
-              return next("No cookie present", false);
+              request = {
+                headers: {
+                  cookie: data.headers.cookie
+                }
+              };
+              return cookieParserMiddleware(request, null, function(error) {
+                var sessionId;
+                data.cookies = request.cookies;
+                rawCookie = data.cookies[sessionConfig.key];
+                if (rawCookie == null) {
+                  return next("No cookie present", false);
+                }
+                sessionId = cookieParser.signedCookie(rawCookie, sessionConfig.secret);
+                data.sessionID = sessionId;
+                return sessionConfig.store.get(sessionId, function(error, session) {
+                  if (error != null) {
+                    return next(error);
+                  }
+                  data.session = new expressSession.Session(data, session);
+                  return next(null, true);
+                });
+              });
             }
             sessionId = cookieParser.signedCookie(rawCookie, sessionConfig.secret);
             data.sessionID = sessionId;
@@ -150,16 +162,6 @@
               return next(null, true);
             });
           });
-        }
-        sessionId = cookieParser.signedCookie(rawCookie, sessionConfig.secret);
-        data.sessionID = sessionId;
-        return sessionConfig.store.get(sessionId, function(error, session) {
-          if (error != null) {
-            return next(error);
-          }
-          data.session = new expressSession.Session(data, session);
-          return next(null, true);
-        });
       });
     });
     this.io.use = function(callback) {
