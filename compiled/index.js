@@ -106,7 +106,7 @@
         return _results;
       }
     };
-    this.io.use(function (socket, next) {
+    this.io.configure(function (socket, next) {
       var data = socket.request;
       if (sessionConfig.store == null) {
         return async.forEachSeries(_this.io.middleware, function(callback, next) {
