@@ -139,7 +139,8 @@
                 data.cookies = request.cookies;
                 rawCookie = data.cookies[sessionConfig.key];
                 if (rawCookie == null) {
-                  return next("No cookie present", false);
+                  // Change by JL - return "null" as error so server returns 403 forbidden
+                  return next(null, false);
                 }
                 sessionId = cookieParser.signedCookie(rawCookie, sessionConfig.secret);
                 data.sessionID = sessionId;
